@@ -1,0 +1,12 @@
+### Text ###
+*.doc
+*.docx
+*.log
+*.msg
+*.pages
+*.rtf
+*.wpd
+*.wps
+
+### Folders ###
+Postgres/data
