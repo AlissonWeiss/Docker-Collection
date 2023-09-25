@@ -1,0 +1,70 @@
+version: '3.1'
+services:
+  mongodb:
+    image: mongo:latest
+    hostname: mongodb
+    container_name: mongodb
+    restart: always # Indica ao Docker que, em caso de qualquer erro, o mongodb deve ser reiniciado.
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USERNAME}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD}
+    expose:
+      - "${MONGODB_PORT}"
+    ports:
+      - "${MONGODB_PORT}:${MONGODB_PORT}"
+    networks:
+      - default
+    volumes:
+      - ./:/data
+
+  orion:
+      image: fiware/orion:latest
+      hostname: orion
+      container_name: orion
+      links:
+          - mongodb
+      expose:
+          - "${ORION_PORT}"
+      ports:
+          - "${ORION_PORT}:${ORION_PORT}"
+      command: -dbhost mongodb -dbuser ${MONGODB_USERNAME} -dbpwd ${MONGODB_PASSWORD}
+
+  iotagent-ul:
+      image: fiware/iotagent-ul:latest
+      hostname: iotagent-ul
+      container_name: iotagent-ul
+      links:
+          - mongodb:mongodb
+          - orion
+      expose:
+          - "7896"
+          - "4041"
+      ports:
+          - "7896:7896"
+          - "4041:4041"
+      environment:
+        - "IOTA_CB_HOST=orion"
+        - "IOTA_CB_PORT=${ORION_PORT}"
+        - "IOTA_NORTH_PORT=4041"
+        - "IOTA_REGISTRY_TYPE=mongodb"
+        - "IOTA_LOG_LEVEL=INFO"
+        - "IOTA_TIMESTAMP=true"
+        - "IOTA_MONGO_HOST=mongodb"
+        - "IOTA_MONGO_PORT=${MONGODB_PORT}"
+        - "IOTA_MONGO_DB=iotagent_ul"
+        - "IOTA_HTTP_PORT=7896"
+        - "IOTA_PROVIDER_URL=${IOTA_PROVIDER_URL}:${IOTA_PROVIDER_PORT}"
+
+  sth-comet:
+    image: fiware/sth-comet:latest
+    hostname: sth-comet
+    container_name: sth-comet
+    links:
+      - mongodb
+    expose:
+      - "8666"
+    ports:
+      - "8666:8666"
+    environment:
+      - STH_HOST=0.0.0.0
+      - DB_URI=mongodb:${MONGODB_PORT}
